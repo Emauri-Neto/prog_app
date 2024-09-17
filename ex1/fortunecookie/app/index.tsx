@@ -15,9 +15,12 @@ const txt = [
 ];
 
 export default function Index() {
-  const [isOpen, setIsOpen] = useState<number>(0);
+  const [isOpen, setIsOpen] = useState<number>(-1);
+  const [text, setText] = useState("");
 
   function openCookie(i: number) {
+    const rdmIdx = Math.floor(Math.random() * txt.length);
+    setText(txt[rdmIdx])
     setIsOpen(i);
   }
 
@@ -35,7 +38,7 @@ export default function Index() {
         ))}
       </View>
       {isOpen !== null && (
-        <Text style={styles.fortuneText}>{txt[isOpen]}</Text>
+        <Text style={styles.fortuneText}>{text}</Text>
       )}
     </View>
   );
