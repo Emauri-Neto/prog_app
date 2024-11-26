@@ -2,9 +2,11 @@ import { DeleteAllExpenses, GetExpense, SaveExpense } from '@/hooks/useExpenses'
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, TextInput, Button } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import Icon from '@expo/vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Expense = {
-    id: string;
+    id: number;
     name: string;
     category: 'INVESTIMENTO' | 'LAZER' | 'ESSENCIAL';
     amount: number;
@@ -13,79 +15,31 @@ type Expense = {
 
 export default function index() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
-    const [amount, setAmount] = useState<string>('');
-    const [category, setCategory] = useState<string>('LAZER');
-    const [name, setName] = useState<string>('');
-    const [isEntry, setIsEntry] = useState<boolean>(true);
+
+    const List = async () => {
+        const xp = await AsyncStorage.getItem('@expense');
+        if (xp) setExpenses(JSON.parse(xp));
+    };
 
     useEffect(() => {
-        const load = async () => {
-            try {
-                const xp = await GetExpense('@expenses');
-                if (xp) {
-                    setExpenses(JSON.parse(xp));
-                    await DeleteAllExpenses('@expenses');
-                }
-            } catch (error) {
-                console.error('Error loading expenses:', error);
-            }
-        };
-        load();
+        const interval = setInterval(() => {
+            List();
+        }, 1000);
+        return () => clearInterval(interval);
     }, []);
 
-    useEffect(() => {
-        const saveExpenses = async () => {
-            try {
-                await SaveExpense('@expenses', JSON.stringify(expenses));
-            } catch (error) {
-                console.error('Error saving expenses:', error);
-            }
-        };
-        saveExpenses();
-    }, [expenses]);
+    const Create = async (newXp: any) => {
+        await AsyncStorage.setItem('@expense', JSON.stringify(newXp));
+        setExpenses(newXp);
+    };
 
-    const handleAdd = () => {
-        if (!amount || !category || !name) {
-            Alert.alert('Erro', 'Preencha todos os campos para registrar uma despesa');
-            return;
-        }
-
-        const newXp: Expense = {
-            id: Date.now().toString(),
-            amount: parseFloat(amount),
-            category: category as 'INVESTIMENTO' | 'LAZER' | 'ESSENCIAL',
-            name,
-            isEntry
-        };
-
-        setExpenses(prev => [...prev, newXp]);
-        setAmount('');
-        setName('');
+    const Remove = async (id: number) => {
+        const updatedTasks = expenses.filter(item => item.id !== id);
+        await Create(updatedTasks);
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Adicionar Despesa</Text>
-
-            <TextInput placeholder='Nome da Despesa' value={name} onChangeText={setName} style={styles.input} />
-
-            <TextInput placeholder='Valor' keyboardType='numeric' value={amount} onChangeText={setAmount} style={styles.input} />
-
-            <Text style={styles.label}>Categoria</Text>
-            <Picker selectedValue={category} onValueChange={itemValue => setCategory(itemValue)} style={styles.picker}>
-                <Picker.Item label='LAZER' value='LAZER' />
-                <Picker.Item label='INVESTIMENTO' value='INVESTIMENTO' />
-                <Picker.Item label='ESSENCIAL' value='ESSENCIAL' />
-            </Picker>
-
-            <Text style={styles.label}>Entrada ou Saída?</Text>
-            <View style={styles.entryButtons}>
-                <Button title='Entrada' onPress={() => setIsEntry(true)} />
-                <Button title='Saída' onPress={() => setIsEntry(false)} />
-            </View>
-
-            <Button title='Adicionar Despesa' onPress={handleAdd} />
-
             <View style={{ display: 'flex' }}>
                 <Text style={styles.used}>Total utilizado:</Text>
                 <Text
@@ -109,7 +63,7 @@ export default function index() {
 
             <FlatList
                 data={expenses}
-                keyExtractor={item => item.id}
+                keyExtractor={item => item.id.toString()}
                 renderItem={({ item }) => (
                     <View style={styles.expenseItem}>
                         <Text style={styles.description}>{item.name}</Text>
@@ -118,6 +72,9 @@ export default function index() {
                             R$ {item.isEntry ? '+' : '-'}
                             {item.amount.toFixed(2)}
                         </Text>
+                        <TouchableOpacity onPress={() => Remove(item.id)} style={styles.deleteButton}>
+                            <Icon name='remove' size={16} color='#fff' />
+                        </TouchableOpacity>
                     </View>
                 )}
                 style={styles.expenseList}
@@ -132,37 +89,7 @@ const styles = StyleSheet.create({
         padding: 20,
         backgroundColor: '#f7f7f7'
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        textAlign: 'center'
-    },
-    input: {
-        height: 40,
-        borderColor: '#ddd',
-        borderWidth: 1,
-        marginBottom: 15,
-        paddingLeft: 10,
-        borderRadius: 5,
-        backgroundColor: '#fff'
-    },
-    label: {
-        fontSize: 16,
-        marginBottom: 10
-    },
-    picker: {
-        height: 50,
-        marginBottom: 15,
-        borderColor: '#ddd',
-        borderWidth: 1,
-        borderRadius: 5
-    },
-    entryButtons: {
-        flexDirection: 'row',
-        gap: 4,
-        marginBottom: 20
-    },
+
     expenseList: {
         flex: 1
     },
@@ -191,5 +118,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginTop: 16,
         fontWeight: 'semibold'
+    },
+    deleteButton: {
+        backgroundColor: 'red',
+        padding: 8,
+        borderRadius: 5
     }
 });

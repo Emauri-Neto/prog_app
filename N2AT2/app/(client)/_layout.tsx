@@ -9,6 +9,12 @@ export default function TabLayout() {
                     title: 'Inicio'
                 }}
             />
+            <Tabs.Screen
+                name='create'
+                options={{
+                    title: 'Despesas'
+                }}
+            />
         </Tabs>
     );
 }

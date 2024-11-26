@@ -6,6 +6,7 @@ export default function RootLayout() {
         <>
             <Stack>
                 <Stack.Screen name='(client)' options={{ headerShown: false }} />
+                <Stack.Screen name='create' options={{ headerShown: false }} />
             </Stack>
             <StatusBar style='auto' />
         </>
